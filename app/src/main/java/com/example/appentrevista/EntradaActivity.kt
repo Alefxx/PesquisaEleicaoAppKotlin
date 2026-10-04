@@ -10,6 +10,11 @@ import androidx.core.view.WindowInsetsCompat
 import android.os.Looper
 
 class EntradaActivity : AppCompatActivity() {
+    private val handler = Handler(Looper.getMainLooper())
+    private val abrirLogin = Runnable {
+        startActivity(Intent(this, LoginActivity::class.java))
+        finish()
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -21,12 +26,16 @@ class EntradaActivity : AppCompatActivity() {
         }
 
 
-        Handler(Looper.getMainLooper()).postDelayed({
-            var telaLogin : Intent
-            telaLogin = Intent(this, LoginActivity::class.java)
-            startActivity(telaLogin)
-            finish()
-        },3000)
+    }
 
+    override fun onStart() {
+        super.onStart()
+        handler.postDelayed(abrirLogin, 1500)
+    }
+
+    override fun onStop() {
+        // Evita abrir o login se a abertura já saiu de primeiro plano.
+        handler.removeCallbacks(abrirLogin)
+        super.onStop()
     }
 }
