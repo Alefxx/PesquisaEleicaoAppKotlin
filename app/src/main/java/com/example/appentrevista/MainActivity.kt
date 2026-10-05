@@ -70,7 +70,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun mudarTela(destino: String) {
-        // Além de esconder os botões, verifica o perfil antes de abrir recursos administrativos.
+
         if (destino != "menu" && perfil != RegrasPesquisa.ADMIN) return
         tela = destino
         WindowCompat.getInsetsController(window, findViewById(R.id.main)).hide(WindowInsetsCompat.Type.ime())
@@ -118,7 +118,7 @@ class MainActivity : AppCompatActivity() {
             adicionarResultado(painel, voto, entrevistas.count { it.votoEstimulado == voto }, total, "votos")
         }
         adicionarTitulo(painel, "Pesquisa espontânea")
-        // Agrupa respostas iguais ignorando maiúsculas, sem alterar a resposta original salva.
+
         entrevistas.groupBy { it.votoEspontaneo.trim().lowercase(Locale.forLanguageTag("pt-BR")) }
             .values.sortedByDescending { it.size }.forEach { grupo ->
                 adicionarResultado(painel, grupo.first().votoEspontaneo, grupo.size, total, "respostas")
@@ -165,7 +165,7 @@ class MainActivity : AppCompatActivity() {
         val filtradas = RegrasPesquisa.filtrar(entrevistas, busca)
         findViewById<TextView>(R.id.resumoMenu).text = getString(R.string.resumo_lista, filtradas.size, entrevistas.size)
         val lista = findViewById<ListView>(R.id.listaEntrevistados)
-        // ListView e ArrayAdapter são nativos: reaproveitam as linhas durante a rolagem.
+
         val adapter = object : ArrayAdapter<Entrevista>(this, android.R.layout.simple_list_item_2, android.R.id.text1, filtradas) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val view = super.getView(position, convertView, parent)
@@ -192,7 +192,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun confirmarLimpeza() {
         if (perfil != RegrasPesquisa.ADMIN) return
-        // O banco só é apagado depois da confirmação explícita do administrador.
+
         MaterialAlertDialogBuilder(this).setTitle("Apagar pesquisas?")
             .setMessage("Tem certeza que deseja apagar todos os dados da pesquisa? Esta ação não pode ser desfeita.")
             .setNegativeButton("Cancelar", null)

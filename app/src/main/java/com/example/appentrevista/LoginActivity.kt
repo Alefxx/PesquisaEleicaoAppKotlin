@@ -41,7 +41,7 @@ class LoginActivity : AppCompatActivity() {
             login.isEmpty() -> { usuario.error = "Informe o usuário"; usuario.requestFocus() }
             password.isEmpty() -> { senha.error = "Informe a senha"; senha.requestFocus() }
             else -> {
-                // Verifica as credenciais e entrega o perfil para o menu correspondente.
+
                 val perfil = RegrasPesquisa.autenticar(login, password)
                 if (perfil == null) {
                     Toast.makeText(this, "Usuário ou senha inválidos", Toast.LENGTH_LONG).show()

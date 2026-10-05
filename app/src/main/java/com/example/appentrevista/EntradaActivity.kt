@@ -34,7 +34,7 @@ class EntradaActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
-        // Evita abrir o login se a abertura já saiu de primeiro plano.
+
         handler.removeCallbacks(abrirLogin)
         super.onStop()
     }

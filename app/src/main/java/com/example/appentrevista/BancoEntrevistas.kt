@@ -6,8 +6,6 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import org.json.JSONArray
 
-// O nome alternativo é usado somente pelos testes, sem tocar nos dados reais.
-// ponytail: banco síncrono para a amostra acadêmica; usar uma thread e paginação se o volume crescer.
 class BancoEntrevistas(context: Context, nomeBanco: String = "pesquisa_eleitoral.db") :
     SQLiteOpenHelper(context, nomeBanco, null, 1) {
     override fun onCreate(db: SQLiteDatabase) {
@@ -27,8 +25,7 @@ class BancoEntrevistas(context: Context, nomeBanco: String = "pesquisa_eleitoral
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        // A versão 1 é a primeira do banco. Futuras mudanças precisam de uma migração
-        // com ALTER TABLE, preservando as entrevistas existentes.
+
     }
 
     fun salvar(entrevista: Entrevista): Long {
@@ -45,8 +42,6 @@ class BancoEntrevistas(context: Context, nomeBanco: String = "pesquisa_eleitoral
             put("latitude", entrevista.latitude)
             put("longitude", entrevista.longitude)
         }
-        // SQLite fica no armazenamento privado do aplicativo e persiste após fechá-lo.
-        // insertOrThrow avisa a tela se a gravação falhar, evitando uma falsa confirmação.
         return writableDatabase.insertOrThrow("entrevistas", null, valores)
     }
 

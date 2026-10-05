@@ -72,7 +72,6 @@ class PesquisaActivity : AppCompatActivity() {
         override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) = Unit
     }
 
-    // Solicita as duas permissões juntas; localização aproximada também é aceita.
     private val permissaoLocalizacao = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { resultado ->
@@ -93,7 +92,7 @@ class PesquisaActivity : AppCompatActivity() {
             finish()
             return
         }
-        // Se a tela for recriada após salvar, não oferece a gravação pela segunda vez.
+
         entrevistaSalva = savedInstanceState?.getBoolean("salva") ?: false
         if (entrevistaSalva) { finish(); return }
         enableEdgeToEdge()
@@ -147,7 +146,7 @@ class PesquisaActivity : AppCompatActivity() {
                 isChecked = problema in problemasSelecionados
                 setOnCheckedChangeListener { botao, marcado ->
                     if (marcado) {
-                        // Impede a quarta escolha; desmarcar uma opção libera outra.
+
                         if (!RegrasPesquisa.podeSelecionarProblema(problemasSelecionados.size)) {
                             botao.isChecked = false
                             Toast.makeText(this@PesquisaActivity, "Limite de três problemas. Desmarque um para escolher outro.", Toast.LENGTH_LONG).show()
@@ -176,7 +175,7 @@ class PesquisaActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.continuarEtapa).text = if (etapa == 4) "Salvar" else "Continuar"
         findViewById<MaterialButton>(R.id.voltarEtapa).text = if (etapa == 0) "Cancelar" else "Voltar"
         if (etapa == 4) {
-            // A data definitiva é capturada ao salvar; aqui mostramos somente as respostas.
+
             val entrevista = criarEntrevista()
             findViewById<TextView>(R.id.resumoEntrevista).text = getString(R.string.revisao_entrevista,
                 entrevista.nome, entrevista.celular, entrevista.votoEspontaneo, entrevista.votoEstimulado,
@@ -234,7 +233,6 @@ class PesquisaActivity : AppCompatActivity() {
         votoEspontaneo = findViewById<EditText>(R.id.votoEspontaneo).text.toString().trim(),
         votoEstimulado = votoSelecionado.orEmpty(),
         problemas = problemasSelecionados.toList(),
-        // Milissegundos desde 1970; exibimos usando a data, hora e fuso do aparelho.
         dataHora = System.currentTimeMillis(),
         latitude = latitude, longitude = longitude
     )
@@ -305,7 +303,7 @@ class PesquisaActivity : AppCompatActivity() {
                 informarLocalizacao("Localização desativada ou indisponível. Ative-a nas configurações e tente novamente.")
                 return
             }
-            // Usa apenas posições recentes; coordenadas antigas de outra entrevista são ignoradas.
+
             val recente = provedores.mapNotNull { gerenciadorLocalizacao.getLastKnownLocation(it) }
                 .filter { (SystemClock.elapsedRealtimeNanos() - it.elapsedRealtimeNanos) in 0..IDADE_MAXIMA_LOCALIZACAO_NS }
                 .minByOrNull { it.accuracy }
@@ -338,7 +336,7 @@ class PesquisaActivity : AppCompatActivity() {
         handler.removeCallbacks(tempoLimite)
         if (::gerenciadorLocalizacao.isInitialized) {
             try { gerenciadorLocalizacao.removeUpdates(ouvinteLocalizacao) }
-            catch (_: SecurityException) { /* A permissão pode ser revogada nas configurações. */ }
+            catch (_: SecurityException) {  }
         }
         if (buscandoLocalizacao && latitude == null) {
             informarLocalizacao("Busca interrompida. Toque em Obter localização para tentar novamente.")
@@ -363,7 +361,7 @@ class PesquisaActivity : AppCompatActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        // Bundle mantém o rascunho nas rotações e nas recriações da Activity pelo Android.
+
         if (::banco.isInitialized) {
             outState.putInt("etapa", etapa)
             outState.putString("voto", votoSelecionado)

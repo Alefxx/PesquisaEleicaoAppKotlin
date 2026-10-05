@@ -27,8 +27,6 @@ data class Entrevista(
         "Problemas: ${problemas.joinToString(", ")}\n\n" +
         "Data e hora: ${dataFormatada()}\n${localizacaoFormatada()}"
 }
-
-// As opções didáticas ficam em um único lugar para o formulário e os resultados.
 object RegrasPesquisa {
     const val ADMIN = "admin"
     const val ENTREVISTADOR = "entrevistador"
@@ -38,8 +36,6 @@ object RegrasPesquisa {
     val votos = candidatos + listOf("Branco", "Nulo", "Não sabe")
     val problemas = listOf("Saúde", "Educação", "Transporte", "Segurança/Violência", "Emprego",
         "Habitação", "Saneamento", "Trânsito", "Limpeza urbana", "Outro")
-
-    // Credenciais fixas para o exercício; o perfil determina quais recursos são exibidos.
     fun autenticar(usuario: String, senha: String): String? = when {
         usuario == ADMIN && senha == ADMIN -> ADMIN
         usuario == ENTREVISTADOR && senha == ENTREVISTADOR -> ENTREVISTADOR
@@ -58,11 +54,9 @@ object RegrasPesquisa {
         selecionados.size in 1..LIMITE_PROBLEMAS && selecionados.distinct().size == selecionados.size &&
             selecionados.all { it in problemas }
 
-    // O denominador inclui todas as entrevistas, inclusive branco, nulo e não sabe.
     fun percentual(quantidade: Int, total: Int): Double =
         if (total == 0) 0.0 else quantidade * 100.0 / total
 
-    // O plus aceita partes do nome e ignora a formatação do telefone na busca.
     fun filtrar(entrevistas: List<Entrevista>, busca: String): List<Entrevista> {
         val texto = busca.trim()
         val digitos = texto.filter(Char::isDigit)
