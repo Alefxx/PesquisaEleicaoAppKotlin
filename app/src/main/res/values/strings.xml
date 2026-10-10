@@ -40,10 +40,10 @@
     <string name="resumo_resultados">Total de entrevistados: %1$d\n%2$s</string>
     <string name="resultado_vazio">Ainda não há entrevistas. As contagens começam em zero.</string>
     <string name="descricao_resultados">Os percentuais usam o total de entrevistados.</string>
-    <string name="resumo_lista">Exibidas: %1$d • Total: %2$d\nToque em um registro para ver todos os dados.</string>
-    <string name="linha_entrevista">%1$s • %2$s\n%3$s</string>
+    <string name="resumo_lista">Exibidas: %1$d • Total: %2$d\nToque em um registro para consultar os dados do entrevistado.</string>
+    <string name="linha_entrevista">%1$s\n%2$s</string>
     <string name="contador_problemas">Problemas selecionados: %1$d/%2$d%3$s</string>
     <string name="limite_atingido"> • Limite atingido</string>
     <string name="indicador_etapa">Etapa %1$d de %2$d • %3$s</string>
-    <string name="revisao_entrevista">Nome: %1$s\nCelular: %2$s\n\nEspontânea: %3$s\nEstimulada: %4$s\n\nProblemas: %5$s\n\n%6$s\n\nData e hora registradas automaticamente ao salvar.</string>
+    <string name="revisao_entrevista">Nome: %1$s\nCelular: %2$s\n\n%3$s\n\nData e hora registradas automaticamente ao salvar.</string>
 </resources>

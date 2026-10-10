@@ -8,33 +8,22 @@ import android.database.sqlite.SQLiteException
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.SystemClock
+import android.os.*
 import android.util.Log
 import android.view.View
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ProgressBar
-import android.widget.RadioGroup
-import android.widget.ScrollView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowCompat
+import androidx.core.view.*
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.radiobutton.MaterialRadioButton
 
-class PesquisaActivity : AppCompatActivity() {
+class PesquisaActivity : AppCompatActivity(), LocationListener {
     private lateinit var banco: BancoEntrevistas
     private lateinit var gerenciadorLocalizacao: LocationManager
     private var etapa = 0
@@ -54,33 +43,27 @@ class PesquisaActivity : AppCompatActivity() {
         R.id.etapaProblemas, R.id.etapaDados, R.id.etapaConfirmacao)
     private val titulosEtapas = listOf("Espontânea", "Estimulada", "Problemas", "Dados", "Confirmação")
 
-    private val ouvinteLocalizacao = object : LocationListener {
-        override fun onLocationChanged(location: Location) {
-            if (!buscandoLocalizacao) return
-            latitude = location.latitude
-            longitude = location.longitude
-            pararLocalizacao()
-            informarLocalizacao(criarEntrevista().localizacaoFormatada())
-        }
-
-        override fun onProviderEnabled(provider: String) = Unit
-        override fun onProviderDisabled(provider: String) {
-            if (buscandoLocalizacao) informarLocalizacao("Localização desativada. Ative-a nas configurações do aparelho.")
-        }
-
-        @Deprecated("Necessário para compatibilidade com Android 7 a 9")
-        override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) = Unit
+    override fun onLocationChanged(location: Location) {
+        if (!buscandoLocalizacao) return
+        latitude = location.latitude
+        longitude = location.longitude
+        pararLocalizacao()
+        informarLocalizacao(criarEntrevista().localizacaoFormatada())
     }
+
+    override fun onProviderEnabled(provider: String) = Unit
+    override fun onProviderDisabled(provider: String) {
+        if (buscandoLocalizacao) informarLocalizacao("Localização desativada. Ative-a nas configurações do aparelho.")
+    }
+
+    @Deprecated("Necessário para compatibilidade com Android 7 a 9")
+    override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) = Unit
 
     private val permissaoLocalizacao = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { resultado ->
-        if (resultado[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            resultado[Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
-            obterLocalizacao()
-        } else {
-            informarLocalizacao("Permissão recusada. Você pode continuar sem localização ou autorizar o acesso nas configurações do aplicativo.")
-        }
+        if (resultado.values.any { it }) obterLocalizacao()
+        else informarLocalizacao("Permissão recusada. Você pode continuar sem localização ou autorizar o acesso nas configurações do aplicativo.")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -124,7 +107,6 @@ class PesquisaActivity : AppCompatActivity() {
             grupo.addView(MaterialRadioButton(this).apply {
                 id = View.generateViewId()
                 text = voto
-                tag = voto
                 minHeight = (48 * resources.displayMetrics.density).toInt()
                 isSaveEnabled = false
                 isChecked = voto == votoSelecionado
@@ -132,7 +114,7 @@ class PesquisaActivity : AppCompatActivity() {
             })
         }
         grupo.setOnCheckedChangeListener { _, id ->
-            votoSelecionado = grupo.findViewById<MaterialRadioButton>(id)?.tag as? String
+            votoSelecionado = grupo.findViewById<MaterialRadioButton>(id)?.text?.toString()
         }
     }
 
@@ -145,13 +127,11 @@ class PesquisaActivity : AppCompatActivity() {
                 isSaveEnabled = false
                 isChecked = problema in problemasSelecionados
                 setOnCheckedChangeListener { botao, marcado ->
-                    if (marcado) {
-
-                        if (!RegrasPesquisa.podeSelecionarProblema(problemasSelecionados.size)) {
-                            botao.isChecked = false
-                            Toast.makeText(this@PesquisaActivity, "Limite de três problemas. Desmarque um para escolher outro.", Toast.LENGTH_LONG).show()
-                        } else problemasSelecionados.add(problema)
-                    } else problemasSelecionados.remove(problema)
+                    if (marcado && problemasSelecionados.size >= RegrasPesquisa.LIMITE_PROBLEMAS) {
+                        botao.isChecked = false
+                        avisar("Limite de três problemas. Desmarque um para escolher outro.")
+                    } else if (marcado) problemasSelecionados.add(problema)
+                    else problemasSelecionados.remove(problema)
                     atualizarContadorProblemas()
                 }
             })
@@ -175,17 +155,14 @@ class PesquisaActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.continuarEtapa).text = if (etapa == 4) "Salvar" else "Continuar"
         findViewById<MaterialButton>(R.id.voltarEtapa).text = if (etapa == 0) "Cancelar" else "Voltar"
         if (etapa == 4) {
-
             val entrevista = criarEntrevista()
             findViewById<TextView>(R.id.resumoEntrevista).text = getString(R.string.revisao_entrevista,
-                entrevista.nome, entrevista.celular, entrevista.votoEspontaneo, entrevista.votoEstimulado,
-                entrevista.problemas.joinToString(", "), entrevista.localizacaoFormatada())
+                entrevista.nome, entrevista.celular, entrevista.localizacaoFormatada())
         }
         currentFocus?.clearFocus()
         WindowCompat.getInsetsController(window, findViewById(R.id.main)).hide(WindowInsetsCompat.Type.ime())
-        findViewById<ScrollView>(R.id.rolagemPesquisa).post {
-            findViewById<ScrollView>(R.id.rolagemPesquisa).scrollTo(0, 0)
-        }
+        val rolagem = findViewById<ScrollView>(R.id.rolagemPesquisa)
+        rolagem.post { rolagem.scrollTo(0, 0) }
     }
 
     private fun validarEtapa(): Boolean = when (etapa) {
@@ -209,13 +186,10 @@ class PesquisaActivity : AppCompatActivity() {
 
     private fun validarCampo(id: Int, mensagem: String): Boolean {
         val campo = findViewById<EditText>(id)
-        campo.error = null
-        if (campo.text.toString().isBlank()) {
-            campo.error = mensagem
-            campo.requestFocus()
-            return false
-        }
-        return true
+        val vazio = campo.text.toString().isBlank()
+        campo.error = if (vazio) mensagem else null
+        if (vazio) campo.requestFocus()
+        return !vazio
     }
 
     private fun voltar() {
@@ -230,9 +204,6 @@ class PesquisaActivity : AppCompatActivity() {
     private fun criarEntrevista(): Entrevista = Entrevista(
         nome = findViewById<EditText>(R.id.etname).text.toString().trim(),
         celular = findViewById<EditText>(R.id.celular).text.toString().trim(),
-        votoEspontaneo = findViewById<EditText>(R.id.votoEspontaneo).text.toString().trim(),
-        votoEstimulado = votoSelecionado.orEmpty(),
-        problemas = problemasSelecionados.toList(),
         dataHora = System.currentTimeMillis(),
         latitude = latitude, longitude = longitude
     )
@@ -252,7 +223,8 @@ class PesquisaActivity : AppCompatActivity() {
         val botao = findViewById<MaterialButton>(R.id.continuarEtapa)
         botao.isEnabled = false
         try {
-            banco.salvar(criarEntrevista())
+            banco.salvar(criarEntrevista(), findViewById<EditText>(R.id.votoEspontaneo).text.toString().trim(),
+                votoSelecionado.orEmpty(), problemasSelecionados.toList())
             entrevistaSalva = true
             MaterialAlertDialogBuilder(this).setTitle("Entrevista salva!")
                 .setMessage("Os dados foram registrados neste aparelho.")
@@ -288,7 +260,7 @@ class PesquisaActivity : AppCompatActivity() {
         permissaoLocalizacao.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
     }
 
-    @SuppressLint("MissingPermission") // A permissão é conferida antes e a revogação é tratada no catch.
+    @SuppressLint("MissingPermission")
     private fun obterLocalizacao() {
         pararLocalizacao()
         try {
@@ -309,12 +281,12 @@ class PesquisaActivity : AppCompatActivity() {
                 .minByOrNull { it.accuracy }
             buscandoLocalizacao = true
             if (recente != null) {
-                ouvinteLocalizacao.onLocationChanged(recente)
+                onLocationChanged(recente)
             } else {
                 informarLocalizacao("Buscando posição do aparelho… aguarde até 20 segundos.")
                 findViewById<MaterialButton>(R.id.obterLocalizacao).isEnabled = false
                 provedores.forEach {
-                    gerenciadorLocalizacao.requestLocationUpdates(it, 1000L, 0f, ouvinteLocalizacao, Looper.getMainLooper())
+                    gerenciadorLocalizacao.requestLocationUpdates(it, 1000L, 0f, this, Looper.getMainLooper())
                 }
                 handler.postDelayed(tempoLimite, TEMPO_LIMITE_LOCALIZACAO_MS)
             }
@@ -335,7 +307,7 @@ class PesquisaActivity : AppCompatActivity() {
     private fun pararLocalizacao() {
         handler.removeCallbacks(tempoLimite)
         if (::gerenciadorLocalizacao.isInitialized) {
-            try { gerenciadorLocalizacao.removeUpdates(ouvinteLocalizacao) }
+            try { gerenciadorLocalizacao.removeUpdates(this) }
             catch (_: SecurityException) {  }
         }
         if (buscandoLocalizacao && latitude == null) {
@@ -361,8 +333,7 @@ class PesquisaActivity : AppCompatActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-
-        if (::banco.isInitialized) {
+        if (::banco.isInitialized && !entrevistaSalva) {
             outState.putInt("etapa", etapa)
             outState.putString("voto", votoSelecionado)
             outState.putStringArrayList("problemas", ArrayList(problemasSelecionados))

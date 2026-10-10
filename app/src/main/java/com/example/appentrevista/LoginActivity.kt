@@ -37,19 +37,18 @@ class LoginActivity : AppCompatActivity() {
         senha.error = null
         val login = usuario.text.toString().trim()
         val password = senha.text.toString()
-        when {
-            login.isEmpty() -> { usuario.error = "Informe o usuário"; usuario.requestFocus() }
-            password.isEmpty() -> { senha.error = "Informe a senha"; senha.requestFocus() }
-            else -> {
-
-                val perfil = RegrasPesquisa.autenticar(login, password)
-                if (perfil == null) {
-                    Toast.makeText(this, "Usuário ou senha inválidos", Toast.LENGTH_LONG).show()
-                } else {
-                    startActivity(Intent(this, MainActivity::class.java).putExtra(RegrasPesquisa.EXTRA_PERFIL, perfil))
-                    finish()
-                }
-            }
+        if (login.isEmpty()) {
+            usuario.error = "Informe o usuário"
+            usuario.requestFocus()
+        } else if (password.isEmpty()) {
+            senha.error = "Informe a senha"
+            senha.requestFocus()
+        } else if ((login == "admin" && password == "admin") ||
+            (login == "entrevistador" && password == "entrevistador")) {
+            startActivity(Intent(this, MainActivity::class.java).putExtra(RegrasPesquisa.EXTRA_PERFIL, login))
+            finish()
+        } else {
+            Toast.makeText(this, "Usuário ou senha inválidos", Toast.LENGTH_LONG).show()
         }
     }
 }

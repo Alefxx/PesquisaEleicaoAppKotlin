@@ -1,13 +1,11 @@
 package com.example.appentrevista
 
 import android.content.Intent
-import android.os.Bundle
-import android.os.Handler
+import android.os.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import android.os.Looper
 
 class EntradaActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
@@ -24,8 +22,6 @@ class EntradaActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-
-
     }
 
     override fun onStart() {
@@ -34,7 +30,6 @@ class EntradaActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
-
         handler.removeCallbacks(abrirLogin)
         super.onStop()
     }

@@ -6,20 +6,11 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ListView
-import android.widget.ProgressBar
-import android.widget.ScrollView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowCompat
+import androidx.core.view.*
 import androidx.core.widget.doAfterTextChanged
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -70,7 +61,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun mudarTela(destino: String) {
-
         if (destino != "menu" && perfil != RegrasPesquisa.ADMIN) return
         tela = destino
         WindowCompat.getInsetsController(window, findViewById(R.id.main)).hide(WindowInsetsCompat.Type.ime())
@@ -113,37 +103,32 @@ class MainActivity : AppCompatActivity() {
             getString(if (total == 0) R.string.resultado_vazio else R.string.descricao_resultados))
         val painel = findViewById<LinearLayout>(R.id.painelResultados)
         painel.removeAllViews()
-        adicionarTitulo(painel, "Pesquisa estimulada")
+        val estimulados = banco.contarVotos("estimulado")
+        val espontaneos = banco.contarVotos("espontaneo")
+        val problemas = banco.contarVotos("problema")
+        adicionarTexto(painel, "Pesquisa estimulada", titulo = true)
         RegrasPesquisa.votos.forEach { voto ->
-            adicionarResultado(painel, voto, entrevistas.count { it.votoEstimulado == voto }, total, "votos")
+            adicionarResultado(painel, voto, estimulados[voto] ?: 0, total, "votos")
         }
-        adicionarTitulo(painel, "Pesquisa espontânea")
-
-        entrevistas.groupBy { it.votoEspontaneo.trim().lowercase(Locale.forLanguageTag("pt-BR")) }
-            .values.sortedByDescending { it.size }.forEach { grupo ->
-                adicionarResultado(painel, grupo.first().votoEspontaneo, grupo.size, total, "respostas")
-            }
-        if (total == 0) adicionarDescricao(painel, "Nenhuma resposta espontânea registrada.")
-        adicionarTitulo(painel, "Problemas apontados")
-        adicionarDescricao(painel, "Cada entrevistado escolhe até três problemas. Por isso, a soma dos percentuais pode superar 100%.")
+        adicionarTexto(painel, "Pesquisa espontânea", titulo = true)
+        espontaneos.forEach { (resposta, quantidade) ->
+            adicionarResultado(painel, resposta, quantidade, total, "respostas")
+        }
+        if (total == 0) adicionarTexto(painel, "Nenhuma resposta espontânea registrada.")
+        adicionarTexto(painel, "Problemas apontados", titulo = true)
+        adicionarTexto(painel, "Cada entrevistado escolhe até três problemas. Por isso, a soma dos percentuais pode superar 100%.")
         RegrasPesquisa.problemas.forEach { problema ->
-            adicionarResultado(painel, problema, entrevistas.count { problema in it.problemas }, total, "menções")
+            adicionarResultado(painel, problema, problemas[problema] ?: 0, total, "menções")
         }
         findViewById<ScrollView>(R.id.rolagemMenu).scrollTo(0, 0)
     }
 
-    private fun adicionarTitulo(painel: LinearLayout, titulo: String) {
+    private fun adicionarTexto(painel: LinearLayout, texto: String, titulo: Boolean = false) {
         painel.addView(TextView(this).apply {
-            text = titulo
-            setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_TitleLarge)
-            setPadding(0, (24 * resources.displayMetrics.density).roundToInt(), 0, 12)
-        })
-    }
-
-    private fun adicionarDescricao(painel: LinearLayout, descricao: String) {
-        painel.addView(TextView(this).apply {
-            text = descricao
-            setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium)
+            text = texto
+            setTextAppearance(if (titulo) com.google.android.material.R.style.TextAppearance_Material3_TitleLarge
+                else com.google.android.material.R.style.TextAppearance_Material3_BodyMedium)
+            if (titulo) setPadding(0, (24 * resources.displayMetrics.density).roundToInt(), 0, 12)
         })
     }
 
@@ -166,33 +151,29 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.resumoMenu).text = getString(R.string.resumo_lista, filtradas.size, entrevistas.size)
         val lista = findViewById<ListView>(R.id.listaEntrevistados)
 
-        val adapter = object : ArrayAdapter<Entrevista>(this, android.R.layout.simple_list_item_2, android.R.id.text1, filtradas) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = super.getView(position, convertView, parent)
-                val entrevista = getItem(position) ?: return view
-                view.findViewById<TextView>(android.R.id.text1).text = entrevista.nome
-                view.findViewById<TextView>(android.R.id.text2).apply {
-                    text = getString(R.string.linha_entrevista, entrevista.celular, entrevista.votoEstimulado, entrevista.dataFormatada())
-                    isSingleLine = false
+        lista.adapter = object : ArrayAdapter<Entrevista>(this, android.R.layout.simple_list_item_2, android.R.id.text1, filtradas) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View =
+                super.getView(position, convertView, parent).apply {
+                    val entrevista = filtradas[position]
+                    findViewById<TextView>(android.R.id.text1).text = entrevista.nome
+                    findViewById<TextView>(android.R.id.text2).apply {
+                        text = getString(R.string.linha_entrevista, entrevista.celular, entrevista.dataFormatada())
+                        isSingleLine = false
+                    }
                 }
-                return view
-            }
         }
-        lista.adapter = adapter
         lista.emptyView = findViewById(R.id.listaVazia)
         findViewById<TextView>(R.id.listaVazia).text =
             if (entrevistas.isEmpty()) "Nenhuma entrevista salva. Inicie uma pesquisa para começar."
             else "Nenhuma entrevista corresponde à busca."
         lista.setOnItemClickListener { _, _, posicao, _ ->
-            val entrevista = adapter.getItem(posicao) ?: return@setOnItemClickListener
             MaterialAlertDialogBuilder(this).setTitle("Detalhes da entrevista")
-                .setMessage(entrevista.detalhes()).setPositiveButton("Fechar", null).show()
+                .setMessage(filtradas[posicao].detalhes()).setPositiveButton("Fechar", null).show()
         }
     }
 
     private fun confirmarLimpeza() {
         if (perfil != RegrasPesquisa.ADMIN) return
-
         MaterialAlertDialogBuilder(this).setTitle("Apagar pesquisas?")
             .setMessage("Tem certeza que deseja apagar todos os dados da pesquisa? Esta ação não pode ser desfeita.")
             .setNegativeButton("Cancelar", null)

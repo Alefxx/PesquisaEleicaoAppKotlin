@@ -8,9 +8,6 @@ data class Entrevista(
     val id: Long = 0,
     val nome: String,
     val celular: String,
-    val votoEspontaneo: String,
-    val votoEstimulado: String,
-    val problemas: List<String>,
     val dataHora: Long,
     val latitude: Double? = null,
     val longitude: Double? = null
@@ -23,8 +20,6 @@ data class Entrevista(
     } else "Localização não disponível"
 
     fun detalhes(): String = "Nome: $nome\nCelular: $celular\n\n" +
-        "Voto espontâneo: $votoEspontaneo\nVoto estimulado: $votoEstimulado\n\n" +
-        "Problemas: ${problemas.joinToString(", ")}\n\n" +
         "Data e hora: ${dataFormatada()}\n${localizacaoFormatada()}"
 }
 object RegrasPesquisa {
@@ -36,14 +31,6 @@ object RegrasPesquisa {
     val votos = candidatos + listOf("Branco", "Nulo", "Não sabe")
     val problemas = listOf("Saúde", "Educação", "Transporte", "Segurança/Violência", "Emprego",
         "Habitação", "Saneamento", "Trânsito", "Limpeza urbana", "Outro")
-    fun autenticar(usuario: String, senha: String): String? = when {
-        usuario == ADMIN && senha == ADMIN -> ADMIN
-        usuario == ENTREVISTADOR && senha == ENTREVISTADOR -> ENTREVISTADOR
-        else -> null
-    }
-
-    fun podeSelecionarProblema(quantidade: Int): Boolean = quantidade < LIMITE_PROBLEMAS
-
     fun celularValido(celular: String): Boolean {
         val digitos = celular.filter(Char::isDigit)
         return celular.all { it.isDigit() || it in " +()-" } &&
@@ -60,10 +47,10 @@ object RegrasPesquisa {
     fun filtrar(entrevistas: List<Entrevista>, busca: String): List<Entrevista> {
         val texto = busca.trim()
         val digitos = texto.filter(Char::isDigit)
+        val buscaCelular = digitos.isNotEmpty() && texto.all { it.isDigit() || it in " +()-" }
         return entrevistas.filter {
             texto.isEmpty() || it.nome.contains(texto, ignoreCase = true) ||
-                (digitos.isNotEmpty() && texto.all { caractere -> caractere.isDigit() || caractere in " +()-" } &&
-                    it.celular.filter(Char::isDigit).contains(digitos))
+                (buscaCelular && it.celular.filter(Char::isDigit).contains(digitos))
         }
     }
 }

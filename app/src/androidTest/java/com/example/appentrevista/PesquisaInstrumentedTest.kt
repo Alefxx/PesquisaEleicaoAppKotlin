@@ -24,22 +24,32 @@ class PesquisaInstrumentedTest {
         context.deleteDatabase(nomeBanco)
         var banco = BancoEntrevistas(context, nomeBanco)
         try {
-            val entrevista = Entrevista(nome = "Ana D'Ávila", celular = "(11) 99999-1234",
-                votoEspontaneo = "Não sabe", votoEstimulado = "Branco",
-                problemas = listOf("Saúde", "Educação", "Outro"), dataHora = 1_700_000_000_000,
+            val entrevista = Entrevista(nome = "Ana D'Ávila", celular = "(11) 99999-1234", dataHora = 1_700_000_000_000,
                 latitude = 0.0, longitude = 0.0)
-            val id = banco.salvar(entrevista)
+            val id = banco.salvar(entrevista, "Não sabe", "Branco", listOf("Saúde", "Educação", "Outro"))
             banco.close()
             banco = BancoEntrevistas(context, nomeBanco)
             assertEquals(listOf(entrevista.copy(id = id)), banco.listar())
             assertEquals(1L, banco.contar())
+            assertEquals(mapOf("Não sabe" to 1), banco.contarVotos("espontaneo"))
+            assertEquals(mapOf("Branco" to 1), banco.contarVotos("estimulado"))
+            assertEquals(mapOf("Saúde" to 1, "Educação" to 1, "Outro" to 1), banco.contarVotos("problema"))
             val semLocalizacao = entrevista.copy(nome = "Bruno", latitude = null, longitude = null)
-            banco.salvar(semLocalizacao)
+            banco.salvar(semLocalizacao, "não sabe", "Nulo", listOf("Saúde"))
             assertEquals(2L, banco.contar())
             assertNull(banco.listar().first().latitude)
+            assertEquals(mapOf("não sabe" to 2), banco.contarVotos("espontaneo"))
+            assertEquals(mapOf("Branco" to 1, "Nulo" to 1), banco.contarVotos("estimulado"))
+            assertEquals(mapOf("Saúde" to 2, "Educação" to 1, "Outro" to 1), banco.contarVotos("problema"))
+            banco.readableDatabase.rawQuery("SELECT * FROM entrevistas", null).use {
+                assertEquals(listOf("id", "nome", "celular", "data_hora", "latitude", "longitude"), it.columnNames.toList())
+            }
             banco.limpar()
             assertEquals(0L, banco.contar())
             assertTrue(banco.listar().isEmpty())
+            assertTrue(banco.contarVotos("espontaneo").isEmpty())
+            assertTrue(banco.contarVotos("estimulado").isEmpty())
+            assertTrue(banco.contarVotos("problema").isEmpty())
         } finally {
             banco.close()
             // O teste usa um banco próprio; as entrevistas do usuário não são apagadas.

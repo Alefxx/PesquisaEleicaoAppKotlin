@@ -15,7 +15,7 @@ São quatro Activities, sem Fragments ou Compose. As classes estão em app/src/m
 | MainActivity.kt | Menu por perfil, resultados, entrevistados, detalhes, filtro, limpeza e saída. |
 | PesquisaActivity.kt | Cinco etapas, validações, preservação das respostas e localização. |
 | Entrevista.kt | Modelo dos dados; formatação de data, hora e coordenadas. |
-| RegrasPesquisa, em Entrevista.kt | Contas, candidatos, problemas, limite, telefone, percentual e filtro. |
+| RegrasPesquisa, em Entrevista.kt | Perfis, candidatos, problemas, limite, telefone, percentual e filtro. |
 | BancoEntrevistas.kt | Criação, gravação, consulta, contagem e limpeza no SQLite nativo. |
 
 Os layouts ficam em app/src/main/res/layout. Cores, textos e estilos ficam em res/values e res/values-night. A aparência utiliza os componentes Material existentes e suporta modo claro e escuro.
@@ -40,13 +40,15 @@ O rascunho não é uma entrevista salva. Somente a finalização grava no banco;
 
 O banco pesquisa_eleitoral.db fica na pasta privada de bancos do aplicativo, normalmente /data/user/0/com.example.appentrevista/databases/pesquisa_eleitoral.db.
 
-A tabela entrevistas tem id, nome, celular, voto espontâneo, voto estimulado, problemas, data/hora, latitude e longitude.
+A tabela entrevistas tem somente id, nome, celular, data/hora, latitude e longitude. Não contém nenhuma resposta da pesquisa.
 
-O celular é texto, preservando sua formatação. Os problemas são uma lista JSON em uma coluna de texto, sem tabelas adicionais para este exercício.
+A tabela votos guarda somente tipo (espontâneo, estimulado ou problema), resposta, chave para agrupar maiúsculas/minúsculas e quantidade. Não guarda nome, celular, identificador de entrevistado, data ou localização. Os resultados usam essas contagens gerais.
 
-SQLiteOpenHelper cria o banco no primeiro acesso. ContentValues envia os pares coluna/valor à inserção sem concatenar respostas em SQL. Os cursores são fechados com use.
+O celular é texto, preservando sua formatação. Cada problema selecionado incrementa sua contagem geral, sem registro individual.
 
-As entrevistas salvas permanecem depois de fechar e abrir o app. Não há servidor, Firebase ou API. O banco está na versão 1; mudanças futuras no esquema exigirão uma migração em onUpgrade() que preserve os registros.
+SQLiteOpenHelper cria o banco no primeiro acesso. ContentValues envia os pares coluna/valor à inserção sem concatenar respostas em SQL. listar() usa SELECT e lê cada coluna pela sua posição, de 0 a 5. Os cursores são fechados com use.
+
+As entrevistas salvas permanecem depois de fechar e abrir o app. Não há servidor, Firebase ou API. O banco está na versão 3. onUpgrade() converte as versões 1 e 2: preserva os dados pessoais, soma as respostas nos totais e remove a tabela antiga que ligava pessoa e resposta.
 
 ## 4. Como funciona o login
 
@@ -55,7 +57,7 @@ As entrevistas salvas permanecem depois de fechar e abrir o app. Não há servid
 | Administrador | admin | admin |
 | Entrevistador | entrevistador | entrevistador |
 
-entrar() valida os campos obrigatórios e chama RegrasPesquisa.autenticar(). O perfil segue para o menu por um Intent.
+entrar() valida os campos obrigatórios e confere usuário e senha com if/else no próprio LoginActivity. O perfil segue para o menu por um Intent.
 
 O entrevistador pode pesquisar e sair. O administrador também pode pesquisar e tem acesso aos resultados, entrevistados e limpeza.
 
@@ -69,7 +71,7 @@ O voto espontâneo é texto livre obrigatório, preenchido antes de mostrar a li
 
 O voto estimulado usa um RadioGroup: cinco candidatos didáticos, Branco, Nulo e Não sabe. O grupo permite uma seleção por vez, e a validação impede avançar sem responder.
 
-Os votos são salvos em campos separados para permitir comparar as duas respostas.
+Os votos espontâneos, estimulados e os problemas incrementam contagens separadas. Não existe registro de resposta individual nem vínculo entre resposta e entrevistado. A lista de pessoas serve somente para consulta dos dados pessoais.
 
 Os cinco nomes ficam em RegrasPesquisa.candidatos. Foram usados Jorge Amado e Candidatos 2 a 5, seguindo a referência do protótipo.
 
@@ -93,7 +95,7 @@ Obter localização solicita ACCESS_FINE_LOCATION e ACCESS_COARSE_LOCATION junta
 
 obterLocalizacao() usa LocationManager, sem Google Maps ou biblioteca adicional. Consulta provedores de rede e GPS habilitados, respeitando a permissão. Usa a última posição apenas se tiver até dois minutos; caso contrário, espera uma atualização por até vinte segundos.
 
-LocationListener recebe latitude e longitude. A solicitação é encerrada quando há resposta, mudança de etapa ou saída da tela, evitando acompanhamento contínuo.
+PesquisaActivity implementa LocationListener e recebe latitude e longitude em onLocationChanged(). A solicitação é encerrada quando há resposta, mudança de etapa ou saída da tela, evitando acompanhamento contínuo.
 
 Recusa de permissão, GPS desligado, ausência de provedor e tempo esgotado mostram mensagens. Sem coordenadas, o app confirma se o usuário deseja salvar sem localização. Os campos ficam NULL e os detalhes exibem Localização não disponível. Zero é uma coordenada válida, diferente de ausência.
 
@@ -101,7 +103,7 @@ Referências da implementação: [permissões de localização](https://develope
 
 ## 9. Cálculo dos resultados
 
-mostrarResultados() lê o banco e mostra:
+mostrarResultados() consulta os totais de votos com contarVotos() e mostra:
 
 - Total de entrevistados.
 - Contagem dos cinco candidatos, Branco, Nulo e Não sabe.
@@ -121,7 +123,7 @@ As barras são ProgressBar nativas, sem biblioteca de gráficos.
 
 atualizarLista() usa ListView com ArrayAdapter, componentes nativos que reutilizam linhas durante a rolagem. O projeto não tinha uma solução de lista; essa opção mantém o exercício simples.
 
-As entrevistas aparecem da mais recente para a mais antiga. Cada linha mostra nome, celular, voto estimulado e data/hora. Ao tocar, um diálogo apresenta todos os campos, incluindo voto espontâneo, problemas e coordenadas.
+As entrevistas aparecem da mais recente para a mais antiga. Cada linha mostra nome, celular e data/hora. Ao tocar, um diálogo apresenta esses dados e coordenadas. A lista, os detalhes e a confirmação não exibem nenhuma resposta da pesquisa, incluindo problemas.
 
 O banco é consultado ao abrir a tela e retornar ao app. O menu também atualiza o total após uma nova entrevista.
 
@@ -129,9 +131,9 @@ O banco é consultado ao abrir a tela e retornar ao app. O menu também atualiza
 
 Somente o administrador vê e executa Limpar dados. confirmarLimpeza() mostra um diálogo com Cancelar e Apagar dados.
 
-banco.limpar() é chamado apenas após confirmar. Depois, os registros em memória são esvaziados, a busca é limpa e o menu consulta o novo total. Ao abrir resultados ou entrevistados, a tela reflete o banco vazio.
+banco.limpar() é chamado apenas após confirmar e apaga tanto os dados pessoais quanto os totais de votos na mesma transação. Depois, os registros em memória são esvaziados, a busca é limpa e o menu consulta o novo total. Ao abrir resultados ou entrevistados, a tela reflete o banco vazio.
 
-Falhas de gravação, consulta ou limpeza mostram mensagens. Na gravação, as respostas continuam na tela para uma nova tentativa. O botão Salvar fica desabilitado durante a operação, e entrevistaSalva impede duplicação por cliques repetidos.
+Falhas de gravação, consulta ou limpeza mostram mensagens. Na gravação, as respostas continuam na tela para uma nova tentativa. O botão Salvar fica desabilitado durante a operação, e entrevistaSalva impede duplicação por cliques repetidos. Salvar usa uma transação: se os totais de votos falharem, o cadastro da pessoa também não é gravado.
 
 ## 12. Plus: filtro por nome ou celular
 
@@ -141,7 +143,7 @@ Ana encontra Ana Maria; 999991234 encontra (11) 99999-1234. Busca vazia mostra t
 
 ## 13. O que estudar para apresentar
 
-1. LoginActivity.entrar() e RegrasPesquisa.autenticar(): campos, credenciais e perfil.
+1. LoginActivity.entrar(): campos, credenciais e perfil no mesmo método.
 2. PesquisaActivity.mostrarEtapa() e validarEtapa(): navegação e validações.
 3. criarOpcoesProblemas(): conjunto, callbacks e limite.
 4. criarEntrevista() e salvarEntrevista(): criação do registro e gravação.
@@ -171,32 +173,33 @@ Uma explicação inicial possível: “Mantive as Activities e o XML do projeto.
 | Como evita localização antiga? | Aceito a última posição somente até dois minutos; senão peço uma nova. |
 | Como conserva respostas ao voltar? | Uso as mesmas Views e variáveis; Bundle cobre recriações. |
 | O que é ContentValues? | Um conjunto de pares coluna/valor para gravar no SQLite. |
-| Como guarda os problemas? | Como uma lista JSON em uma coluna de texto. |
+| Como guarda os problemas? | Somente em contagens gerais, sem ligar a escolha ao entrevistado. |
 | Como funciona o plus? | Filtro a lista por parte do nome ou pelos dígitos do telefone. |
 | Para que serve o adapter? | Para transformar cada Entrevista em uma linha reutilizável. |
 | Precisa de internet? | Banco e login são locais; a disponibilidade da localização depende do aparelho. |
 | E se houver milhares de entrevistas? | Seria adequado fazer I/O em outra thread e paginar a consulta. Esta versão atende à amostra acadêmica. |
 | Como evita apagar por engano? | Exijo confirmação antes de chamar delete. |
 | Onde estão as senhas? | As contas didáticas estão fixas no código, sem servidor. |
+| Dá para consultar o voto de uma pessoa? | Não. Os dados pessoais não contêm votos, e os votos ficam apenas em contagens gerais sem identificador da pessoa. |
 
 ## 15. Validação e roteiro no aparelho
 
 Verificado neste ambiente:
 
 - APK debug gerado por :app:assembleDebug.
-- Cinco testes unitários aprovados por :app:testDebugUnitTest.
+- Quatro testes unitários de regras aprovados por :app:testDebugUnitTest.
 - :app:lintDebug aprovado, sem erros.
 - APK de testes instrumentados compilado por :app:assembleDebugAndroidTest.
 - git diff --check sem erros de whitespace.
 
-Restaram três avisos do Lint: novas versões de AGP/Core disponíveis, mantidas conforme o pedido, e pesos de layout aninhados na lista. Os erros do Lint não foram suprimidos.
+O Lint terminou sem erros. Salvar e limpar usam a extensão transaction já disponível no projeto, que confirma a operação ou desfaz todas as gravações se ocorrer uma falha.
 
-Não havia aparelho conectado nem imagem de emulador instalada. Os dois testes instrumentados foram **compilados, mas não executados**. A aparência em execução, as permissões e o GPS precisam de conferência em dispositivo.
+Os testes instrumentados precisam de aparelho ou emulador para execução. A aparência em execução, as permissões e o GPS precisam de conferência em dispositivo.
 
 Os testes estão em:
 
-- app/src/test/java/com/example/appentrevista/RegrasPesquisaTest.kt: login, limite, percentual, filtro e celular.
-- app/src/androidTest/java/com/example/appentrevista/PesquisaInstrumentedTest.kt: persistência ao reabrir, limpeza, coordenadas zero/null e preservação do formulário ao recriar a Activity. A persistência usa banco de teste separado.
+- app/src/test/java/com/example/appentrevista/RegrasPesquisaTest.kt: limite, percentual, filtro e celular.
+- app/src/androidTest/java/com/example/appentrevista/PesquisaInstrumentedTest.kt: persistência, contagens gerais de todas as respostas, ausência de respostas no cadastro pessoal, limpeza, coordenadas zero/null e preservação do formulário. O teste de banco usa um arquivo separado.
 
 No Android Studio, selecione um dispositivo e use Run. Com aparelho conectado, execute os testes instrumentados pelo Gradle usando a tarefa :app:connectedDebugAndroidTest.
 
@@ -216,6 +219,7 @@ Roteiro manual, ainda pendente em aparelho:
 - [ ] Fechar e reabrir; entrar como administrador e conferir os registros.
 - [ ] Verificar percentuais com entrevistas de votos diferentes.
 - [ ] Buscar nome e celular, com e sem pontuação; abrir os detalhes.
+- [ ] Conferir que a lista, os detalhes e a confirmação não exibem respostas da pessoa, incluindo problemas, e que os resultados mostram apenas totais.
 - [ ] Cancelar a limpeza e conferir que os dados permanecem.
 - [ ] Confirmar a limpeza; verificar total zero, lista vazia e percentuais zero.
 

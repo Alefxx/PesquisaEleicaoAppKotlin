@@ -5,18 +5,7 @@ import org.junit.Test
 
 class RegrasPesquisaTest {
     @Test
-    fun loginReconhecePerfisERecusaCredenciaisAntigas() {
-        assertEquals(RegrasPesquisa.ADMIN, RegrasPesquisa.autenticar("admin", "admin"))
-        assertEquals(RegrasPesquisa.ENTREVISTADOR, RegrasPesquisa.autenticar("entrevistador", "entrevistador"))
-        assertNull(RegrasPesquisa.autenticar("admin", "1234"))
-        assertNull(RegrasPesquisa.autenticar("ent", "123"))
-        assertNull(RegrasPesquisa.autenticar("", ""))
-    }
-
-    @Test
     fun limiteDeProblemasAceitaTresERecusaQuatroOuRepeticoes() {
-        assertTrue(RegrasPesquisa.podeSelecionarProblema(2))
-        assertFalse(RegrasPesquisa.podeSelecionarProblema(3))
         assertTrue(RegrasPesquisa.problemasValidos(listOf("Saúde", "Educação", "Emprego")))
         assertFalse(RegrasPesquisa.problemasValidos(listOf("Saúde", "Educação", "Emprego", "Outro")))
         assertFalse(RegrasPesquisa.problemasValidos(listOf("Saúde", "Saúde")))
@@ -33,9 +22,7 @@ class RegrasPesquisaTest {
 
     @Test
     fun filtroBuscaNomeSemDistinguirCaixaETelefoneSemPontuacao() {
-        val ana = Entrevista(nome = "Ana Maria", celular = "(11) 99999-1234",
-            votoEspontaneo = "Não sabe", votoEstimulado = "Branco",
-            problemas = listOf("Saúde"), dataHora = 1)
+        val ana = Entrevista(nome = "Ana Maria", celular = "(11) 99999-1234", dataHora = 1)
         val bruno = ana.copy(nome = "Bruno", celular = "(11) 98888-5678")
         val entrevistas = listOf(ana, bruno)
         assertEquals(listOf(ana), RegrasPesquisa.filtrar(entrevistas, "  ANA  "))
